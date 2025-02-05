@@ -92,7 +92,7 @@ class DES:
     ]
 
     # Define the left shift schedule for each round
-    shift_schedule = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
+    shift = [1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1]
 
 
     #expansion box table
@@ -119,6 +119,41 @@ class DES:
     
     def init(self, key):
         self.key = self.key_to_binary(key)
+
+
+    def bin_to_hex(self, bin_string):
+
+        decimal_value = int(bin_string, 2)  # Convertendo o inteiro para hexadecimal, removendo o prefixo '0x'
+        hex = hex(decimal_value)[2:] # Garantindo que a saída seja em letras minúsculas e sem o prefixo '0x'
+        return hex.zfill(len(bin_string) // 4)  # Cada 4 bits são 1 dígito hexadecimal
+    
+    def hex_to_bin(self, hex_str):
+        
+        decimal_value = int(hex_str, 16) # Convertendo a string hexadecimal para inteiro
+        bin = bin(decimal_value)[2:] # Convertendo o inteiro para binário, removendo o prefixo '0b'
+        return bin.zfill(len(hex_str) * 4) # Garantindo que o número de bits seja múltiplo de 4 (ou seja, 1 dígito hexadecimal = 4 bits)
+
+
+
+    def get_subkeys(self):
+        if self.key is None:
+            raise ValueError("Chave não definida")
+    
+        permuted_key = ''.join(self.key[i-1] for i in self.pc1_table) # PC1 permuta a chave inicial
+        
+        c, d = permuted_key[:28], permuted_key[28:] # Divida a chave permutada em duas metades
+        
+        subkeys = []
+        for round_num in range(16): # Gerar 16 subchaves
+
+            c = c[self.shift[round_num]:] + c[:self.shift[round_num]]
+            d = d[self.shift[round_num]:] + d[:self.shift[round_num]]
+
+            # Aplicar PC2
+            cd = c + d
+            subkey = ''.join(cd[i-1] for i in self.pc2_table)
+            subkeys.append(subkey)        
+        return subkeys
          
             
     def to_binary(self, input):
@@ -147,36 +182,19 @@ class DES:
         
         key_bin = key_bin[:64] # Garante que a chave terá 64 bits
         return key_bin
-    
 
+    def bin_to_ascii(self, bin_string):
+        ascii_str = ''.join([chr(int(bin_string[i:i+8], 2)) for i in range(0, len(bin_string), 8)])
+        return ascii_str
 
-    def get_subkeys(self):
-        if self.key is None:
-            raise ValueError("Chave não definida")
-    
-        permuted_key = ''.join(self.key[i-1] for i in self.pc1_table) # PC1 permuta a chave inicial
-        
-        c, d = permuted_key[:28], permuted_key[28:] # Divida a chave permutada em duas metades
-        
-        subkeys = []
-        for round_num in range(16):
-            # Aplicar deslocamento
-            c = c[self.shift_schedule[round_num]:] + c[:self.shift_schedule[round_num]]
-            d = d[self.shift_schedule[round_num]:] + d[:self.shift_schedule[round_num]]
-            # Aplicar PC2
-            cd_concatenated = c + d
-            subkey = ''.join(cd_concatenated[i-1] for i in self.pc2_table)
-            subkeys.append(subkey)        
-        return subkeys
     
     
     # Realiza permutação com base na initialTable
     def initial_permutation(self, block):
-        
         permuted_block = ''.join(block[i-1] for i in self.initialTable)
         return permuted_block
     
-    def split_block(self, block):
+    def split(self, block):
         left_half = block[:32]
         right_half = block[32:]
         return left_half, right_half
@@ -194,59 +212,39 @@ class DES:
             substituted += f'{self.s_boxes[i][row][col]:04b}'
         return substituted
 
-    def feistel_round(self, left, right, subkey):
-        # Expande a metade direita
-        expanded_right = self.expand_half(right)
-        # XOR com a subchave
-        xored = ''.join('1' if expanded_right[i] != subkey[i] else '0' for i in range(48))
-        # Substituição com as S-boxes
-        substituted = self.substitute(xored)
-        # Permutação P
-        permuted = ''.join(substituted[i-1] for i in self.p_box_table)
-        # XOR com a metade esquerda
-        new_right = ''.join('1' if permuted[i] != left[i] else '0' for i in range(32))
+    def round(self, left, right, subkey):
+        
+        expanded_right = self.expand_half(right) # Expande a metade direita
+        xored = ''.join('1' if expanded_right[i] != subkey[i] else '0' for i in range(48)) # XOR com a subchave
+        substituted = self.substitute(xored) # Substituição com as S-boxes
+        permuted = ''.join(substituted[i-1] for i in self.p_box_table)  # Permutação P
+        new_right = ''.join('1' if permuted[i] != left[i] else '0' for i in range(32))# XOR com a metade esquerda
         return right, new_right
     
     def inverse_initial_permutation(self, block):
         permuted_block = ''.join(block[i-1] for i in self.ip_inverse_table)
         return permuted_block 
     
-    def bin_to_ascii(self, binary_str):
-        ascii_str = ''.join([chr(int(binary_str[i:i+8], 2)) for i in range(0, len(binary_str), 8)])
-        return ascii_str
 
-    def bin_to_hex(self, binary_str):
-        # Convertendo a string binária para inteiro
-        decimal_value = int(binary_str, 2)
-        # Convertendo o inteiro para hexadecimal, removendo o prefixo '0x'
-        hex_value = hex(decimal_value)[2:]
-        # Garantindo que a saída seja em letras minúsculas e sem o prefixo '0x'
-        return hex_value.zfill(len(binary_str) // 4)  # Cada 4 bits são 1 dígito hexadecimal
-    
-    def hex_to_bin(self, hex_str):
-        # Convertendo a string hexadecimal para inteiro
-        decimal_value = int(hex_str, 16)
 
-        # Convertendo o inteiro para binário, removendo o prefixo '0b'
-        bin_value = bin(decimal_value)[2:]
 
-        # Garantindo que o número de bits seja múltiplo de 4 (ou seja, 1 dígito hexadecimal = 4 bits)
-        return bin_value.zfill(len(hex_str) * 4)
-
+    #encriptar
     def encrypt(self, plaintext):
         blocks = self.msg_to_binary(plaintext)
         subkeys = self.get_subkeys()
         ciphertext = ''
         for block in blocks:
             block = self.initial_permutation(block)
-            left, right = self.split_block(block)
+            left, right = self.split(block)
             for subkey in subkeys:
-                left, right = self.feistel_round(left, right, subkey)
+                left, right = self.round(left, right, subkey)
             combined_block = right + left
             ciphertext += self.inverse_initial_permutation(combined_block)
         cipherhex = self.bin_to_hex(ciphertext)      
         return cipherhex
 
+
+    #decriptar
     def decrypt(self, hex):
         # Basta transformar o hex p binario 
         blocks = self.hex_to_bin(hex)
@@ -258,9 +256,9 @@ class DES:
         decrypted_bin = ''
         for block in blocks:
             block = self.initial_permutation(block)
-            left, right = self.split_block(block)
+            left, right = self.split(block)
             for subkey in subkeys:
-                left, right = self.feistel_round(left, right, subkey)
+                left, right = self.round(left, right, subkey)
             combined_block = right + left
             decrypted_bin += self.inverse_initial_permutation(combined_block)
         decrypted_text = self.bin_to_ascii(decrypted_bin)      

@@ -1,17 +1,14 @@
-import socket
 from diffie_hellman import DiffieHellman
 from des import DES
+import socket
 
-# Configuração do cliente
 host = 'localhost'
-port = 5001
+port = 7070
 
-# Parâmetros públicos (g e p)
-g = 5
-p = 972633691296
+baseg = 5
+primo = 972633691296
 
-# Inicializando o sender (cliente) Diffie-Hellman
-sender = DiffieHellman(g, p)
+sender = DiffieHellman(baseg, primo) #cliente
 
 # Criando socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
