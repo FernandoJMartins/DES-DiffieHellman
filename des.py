@@ -157,7 +157,6 @@ class DES:
          
             
     def to_binary(self, input):
-        # Converte cada caractere da string em seu valor binário (8 bits para cada caractere)
         return ''.join(f'{ord(c):08b}' for c in input)
 
     def padding(self, input_bin) :
@@ -188,16 +187,14 @@ class DES:
         return ascii_str
 
     
-    
-    # Realiza permutação com base na initialTable
     def initial_permutation(self, block):
         permuted_block = ''.join(block[i-1] for i in self.initialTable)
         return permuted_block
     
     def split(self, block):
-        left_half = block[:32]
-        right_half = block[32:]
-        return left_half, right_half
+        left = block[:32]
+        right = block[32:]
+        return left, right
     
     def expand_half(self, half_block):
         expanded_half = ''.join(half_block[i-1] for i in self.e_box_table)
@@ -245,14 +242,10 @@ class DES:
 
 
     #decriptar
-    def decrypt(self, hex):
-        # Basta transformar o hex p binario 
+    def decrypt(self, hex): 
         blocks = self.hex_to_bin(hex)
-        # Cria um array de blocos de 64bits 
         blocks = [blocks[i:i+64] for i in range(0, len(blocks), 64)]
-        # Basta inverter a ordem da lista de subchaves 
         subkeys = self.get_subkeys()[::-1]
-        # Realizar os mesmos passos de encrypt
         decrypted_bin = ''
         for block in blocks:
             block = self.initial_permutation(block)
