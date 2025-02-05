@@ -8,7 +8,7 @@ port = 7070
 baseg = 5
 primo = 972633691296 
 
-receiver = DiffieHellman(g, p) #server
+receiver = DiffieHellman(baseg, primo)  # Server
 
 # Cria uma comunicação via socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
@@ -29,12 +29,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         print(f"Chave pública do receiver enviada: {receiver.public_key}")
 
         # Calcula a chave compartilhada
-        shared_key = str(receiver.generate_shared_key(sender_public_key))
-        # Utiliza a chave comum Diffie Hellman como a chave do DES
+        shared_key = str(receiver.generate_shared_key(sender_public_key))[:8]  # Ajusta para 8 bytes
+        print(f"Chave compartilhada gerada: {shared_key}")
+        
+        # Utiliza a chave comum Diffie-Hellman como a chave do DES
         des = DES(shared_key)
+        
         # Recebe a mensagem criptografada
         encrypted_msg = conn.recv(1024).decode()
-        print(encrypted_msg)
-        input('Pressione enter para descriptografar a mensagem ')
-    print(f"Mensagem descriptografada: {des.decrypt(encrypted_msg)}")
+        print(f"Mensagem criptografada recebida: {encrypted_msg}")
         
+        input('Pressione Enter para descriptografar a mensagem...')
+        print(f"Mensagem descriptografada: {des.decrypt(encrypted_msg)}")

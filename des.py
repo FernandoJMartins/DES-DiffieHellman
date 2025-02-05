@@ -117,21 +117,21 @@ class DES:
         33, 1, 41, 9, 49, 17, 57, 25
     ]
     
-    def init(self, key):
+    def __init__(self, key):
         self.key = self.key_to_binary(key)
 
 
     def bin_to_hex(self, bin_string):
 
         decimal_value = int(bin_string, 2)  # Convertendo o inteiro para hexadecimal, removendo o prefixo '0x'
-        hex = hex(decimal_value)[2:] # Garantindo que a saída seja em letras minúsculas e sem o prefixo '0x'
-        return hex.zfill(len(bin_string) // 4)  # Cada 4 bits são 1 dígito hexadecimal
+        hexa = hex(decimal_value)[2:] # Garantindo que a saída seja em letras minúsculas e sem o prefixo '0x'
+        return hexa.zfill(len(bin_string) // 4)  # Cada 4 bits são 1 dígito hexadecimal
     
     def hex_to_bin(self, hex_str):
         
         decimal_value = int(hex_str, 16) # Convertendo a string hexadecimal para inteiro
-        bin = bin(decimal_value)[2:] # Convertendo o inteiro para binário, removendo o prefixo '0b'
-        return bin.zfill(len(hex_str) * 4) # Garantindo que o número de bits seja múltiplo de 4 (ou seja, 1 dígito hexadecimal = 4 bits)
+        binvalue = bin(decimal_value)[2:] # Convertendo o inteiro para binário, removendo o prefixo '0b'
+        return binvalue.zfill(len(hex_str) * 4) # Garantindo que o número de bits seja múltiplo de 4 (ou seja, 1 dígito hexadecimal = 4 bits)
 
 
 
@@ -222,7 +222,7 @@ class DES:
         return right, new_right
     
     def inverse_initial_permutation(self, block):
-        permuted_block = ''.join(block[i-1] for i in self.ip_inverse_table)
+        permuted_block = ''.join(block[i-1] for i in self.inverse_table)
         return permuted_block 
     
 
